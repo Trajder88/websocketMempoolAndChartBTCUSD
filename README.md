@@ -26,14 +26,14 @@ Install the necessary packages:
 
 bash: 
 
-npm install express ws
+    npm install express ws
 
 Usage
 Start the application:
 
 bash: 
 
-node app
+    node app
 
     Open your browser and navigate to http://localhost:8000 to access the BTC to USD converter interface.
 
