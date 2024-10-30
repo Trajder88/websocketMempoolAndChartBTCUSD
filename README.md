@@ -1,6 +1,7 @@
 **Real-Time BTC to USD Converter**
 
 This project provides a real-time BTC to USD conversion using WebSocket data from the Binance API. It includes a simple interface for entering BTC values and instantly seeing corresponding USD values based on the current exchange rate. Additionally, it integrates data from mempool.space, displaying information about blockchain blocks, transactions, and recommended transaction fees.
+
 Features
 Real-Time BTC to USD Conversion: Updated using Binance's WebSocket API.
 Mempool Information: Displays real-time blockchain data, including blocks, transactions, and recommended fees.
