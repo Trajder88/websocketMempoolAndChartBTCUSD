@@ -40,7 +40,7 @@ bash:
 
 Open your browser and navigate to http://localhost:8000 to access the BTC to USD converter interface.
 
-Additional Notes
+Additional Notes:
 
 Ensure you have a stable internet connection for live data updates from Binance and mempool.space.
 This project uses the Binance WebSocket API for real-time price data, so WebSocket support is essential.
