@@ -17,7 +17,7 @@ Clone this repository:
 
 bash: 
 
-    git clone [https://github.com/Trajder88/websocketMempoolAndChartBTCUSD.git]
+    git clone https://github.com/Trajder88/websocketMempoolAndChartBTCUSD.git
 
 Navigate to the project directory:
 
