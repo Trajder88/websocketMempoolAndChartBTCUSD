@@ -15,7 +15,9 @@ Requirements
 Installation
 Clone this repository:
 
-bash: git clone [https://github.com/Trajder88/websocketMempoolAndChartBTCUSD.git]
+bash: 
+
+    git clone [https://github.com/Trajder88/websocketMempoolAndChartBTCUSD.git]
 
 Navigate to the project directory:
 
