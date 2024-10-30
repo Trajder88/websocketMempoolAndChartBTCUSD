@@ -15,19 +15,25 @@ Requirements
 Installation
 Clone this repository:
 
-bash: git clone https://github.com/yourusername/your-repo-name.git
+bash: git clone [https://github.com/yourusername/your-repo-name.git](https://github.com/Trajder88/websocketMempoolAndChartBTCUSD.git)
 
 Navigate to the project directory:
-bash: cd your-repo-name
+bash: 
+
+cd your-repo-name
 
 Install the necessary packages:
 
-bash: npm install express ws
+bash: 
+
+npm install express ws
 
 Usage
 Start the application:
 
-bash: node app
+bash: 
+
+node app
 
     Open your browser and navigate to http://localhost:8000 to access the BTC to USD converter interface.
 
