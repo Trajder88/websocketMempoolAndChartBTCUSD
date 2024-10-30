@@ -18,9 +18,10 @@ Clone this repository:
 bash: git clone [https://github.com/yourusername/your-repo-name.git](https://github.com/Trajder88/websocketMempoolAndChartBTCUSD.git)
 
 Navigate to the project directory:
+
 bash: 
 
-cd your-repo-name
+    cd your-repo-name
 
 Install the necessary packages:
 
