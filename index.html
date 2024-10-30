@@ -1,0 +1,465 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+      /* #chart {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      } */
+
+
+      #chart .legend {
+          position: absolute; 
+          left: 12px; 
+          top: 12px; 
+          z-index: 1; 
+          font-size: 14px; 
+          font-family: sans-serif; 
+          line-height: 18px; 
+          font-weight: 300;
+          /* color: whiteSmoke; */
+      }
+
+      #chart .legendJSON {
+          position: absolute; 
+          left: 12px; 
+          top: 27px; 
+          z-index: 1; 
+          font-size: 14px; 
+          font-family: sans-serif; 
+          line-height: 18px; 
+          font-weight: 300;
+          /* color: whiteSmoke; */
+      }
+
+      .block-container {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 10px; /* Dodaj odstęp między blokami */
+        flex-direction: row-reverse;
+        overflow-x: auto;
+        font-size: 10px;
+      }
+
+      .block {
+        flex-grow: 1;
+        width: 125px;
+        height: 125px;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+      }
+
+      .block pre {
+        margin-top: 5px; /* Odstęp przed akapitem */
+        margin-bottom: 5px; /* Odstęp po akapicie */
+      }
+    </style>
+</head>
+<body>
+  <h2>Mempool Blocks</h2>
+  <!-- <pre id="result-mempool-blocks">Waiting for data</pre><br> -->
+  <div id="block-container" class="block-container"></div>
+  <div class="container">
+    <div class="row">
+      <div class="col-6">
+        <pre><h4>Rekomendacja fees</h4></pre>
+        <!-- <pre id="result"></pre> -->
+        <pre>Wysoki priorytet: <span id="fastestFee">[Waiting for data]</span> sat/vB ~ <span id="fastestFeeInSatoshi"></span> satoshi</pre>
+        <pre>Średni priorytet: <span id="halfHourFee">[Waiting for data]</span> sat/vB</pre>
+        <pre>Niski priorytet: <span id="hourFee">[Waiting for data]</span> sat/vB</pre>
+        <pre>Brak priorytetu: <span id="economyFee">[Waiting for data]</span> sat/vB</pre>
+        <pre>Próg odrzucenia < <span id="minimumFee">[Waiting for data]</span> sat/vB</pre>
+        <br>
+        <!-- Dodaj nowy input -->
+        <h4>Convert BTCUSD:</h4>
+        <div class="d-flex">
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" id="btcInput" aria-label="BTC" aria-describedby="convertBTC" value="1">
+            <span class="input-group-text" id="convertBTC">BTC</span>
+          </div>
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" id="usdInput" aria-label="USD" aria-describedby="convertUSD">
+            <span class="input-group-text" id="convertUSD">USD</span>
+          </div>
+        </div>        
+        <label for="priceValue">Price Value:</label>
+        <input type="number" step="any" id="priceValue">
+      </div>
+
+      <div class="col-6 position-relative">
+          <div id="chart" style="position: relative;">
+              <div class="legend"></div>
+              <div class="legendJSON"></div>
+          </div>
+      </div>            
+
+    </div>
+    <div class="row">
+      <div class="col-6">
+        <h3>New Transaction:</h3>
+        <p id="result-transactions">Waiting for data</p>
+      </div>
+      <div id="result-blocks" class="col-6">
+        <h3>Block Details</h3>
+        <ul class="list-group">
+          <li class="list-group-item">
+            <strong>Block ID:</strong> 
+            <a id="block-id" href="" target="_blank"></a>
+          </li>
+          <li class="list-group-item"><strong>Height:</strong> <span id="block-height"></span></li>
+          <li class="list-group-item"><strong>Timestamp:</strong> <span id="block-timestamp"></span></li>
+          <li class="list-group-item"><strong>Previous Block Hash:</strong> 
+            <!-- <span id="previous-block"></span> -->
+            <a id="previous-block" href="" target="_blank"></a>
+          </li>
+          <li class="list-group-item"><strong>Transaction Count:</strong> <span id="tx-count"></span></li>
+          <li class="list-group-item"><strong>Total Fees:</strong> <span id="total-fees"></span> <span id="totalFeesInUSD"></span></li>
+          <li class="list-group-item"><strong>Reward:</strong> <span id="reward"></span> <span id="rewardInUSD"></span></li>
+          <li class="list-group-item"><strong>Coinbase Address:</strong> 
+            <!-- <span id="coinbase-address"></span> -->
+            <a id="coinbase-address" href="" target="_blank"></a>
+          </li>
+          <li class="list-group-item"><strong>Mining Pool:</strong> <span id="pool-name"></span></li>
+        </ul>
+      </div>
+      
+    </div>
+  </div>
+
+<script src="https://mempool.space/mempool.js"></script>
+
+
+<script>
+  function adjustChartSize() {
+    const chartContainer = document.getElementById('chart');
+    chart.resize(chartContainer.clientWidth, 400);
+  }
+  var chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      width: document.getElementById('chart').clientWidth,
+      height: 400,
+      layout: {
+        backgroundColor: '#1f1f1f',
+      },
+      grid: {
+        vertLines: {
+          color: 'rgba(197, 203, 206, 0.5)',
+        },
+        horzLines: {
+          color: 'rgba(197, 203, 206, 0.5)',
+        },
+      },
+      priceScale: {
+        borderColor: 'rgba(197, 203, 206, 0.8)',
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 20,  // Dodany offset na prawo, aby zablokować wyświetlanie poza wykresem
+        rightBarStaysOnScroll: false,
+        shiftVisibleRangeOnNewBar: false,
+      },
+      watermark: {
+      visible: true,
+      fontSize: 60,
+      horzAlign: 'center',
+      vertAlign: 'center',
+      color: 'whiteSmoke',
+      text: 'BTC/USD 1m',
+    },
+  });
+
+  var candleSeries = chart.addCandlestickSeries({
+    upColor: 'rgba(0, 150, 136, 0.7)',
+    downColor: 'rgba(255, 82, 82, 0.7)',
+    borderDownColor: 'rgba(255, 82, 82, 1)',
+    borderUpColor: 'rgba(0, 150, 136, 1)',
+    wickDownColor: 'rgba(255, 82, 82, 1)',
+    wickUpColor: 'rgba(0, 150, 136, 1)',
+  });
+
+  let currentPrice;
+
+
+  function updatePrice(newPrice) {
+    // Sprawdzamy, czy newPrice jest liczbą
+    if (!isNaN(newPrice)) {
+      currentPrice = parseFloat(newPrice); // Konwersja na liczbę
+      // Formatowanie czasu na wykresie
+      var time = new Date().toLocaleTimeString(); 
+      if (!isNaN(currentPrice)) {
+        legend.innerText = 'BTC/USD 1m || P: ' + currentPrice.toFixed(2) + ' || Time: ' + time;
+      } else {
+        legend.innerText = 'BTC/USD 1m - Price data not available';
+      }
+    } else {
+      legend.innerText = 'BTC/USD 1m - Price data not available';
+    }
+  }
+
+  fetch('http://localhost:8000/history')
+  .then((r) => r.json())
+  .then((response) => {
+    // console.log("response: ", response);
+    response.forEach((dataPoint) => {
+      dataPoint.time = new Date(dataPoint.timestamp / 1000).getTime();
+    });
+    candleSeries.setData(response);
+    chart.timeScale().scrollToRealTime();
+  });
+
+
+  var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
+
+  binanceSocket.onmessage = function (event) {  
+    var message = JSON.parse(event.data);
+
+    var candlestick = message.k;
+    updatePrice(candlestick.c);
+    console.log("currentPrice: ", currentPrice);
+
+    // Pobierz element input za pomocą ID
+    var inputElement = document.getElementById('priceValue');
+
+
+    // Ustaw wartość input na candlestick.c
+    inputElement.value = parseFloat(candlestick.c).toFixed(2);
+    
+    // Ustaw tytuł dokumentu na wartość ceny
+    document.title = parseFloat(candlestick.c).toFixed(2) + " || BTCUSD";
+    document.getElementById('usdInput').value = (document.getElementById('btcInput').value * currentPrice).toFixed(2);
+
+    candleSeries.update({
+      time: candlestick.t / 1000,
+      open: candlestick.o,
+      high: candlestick.h,
+      low: candlestick.l,
+      close: candlestick.c
+    });
+    chart.timeScale().scrollToRealTime();
+  };
+
+  // Funkcja przeliczająca BTC na USD po zmianie wartości BTC
+  document.getElementById('btcInput').addEventListener('input', function () {
+    var btcAmount = parseFloat(this.value);
+    if (!isNaN(btcAmount) && currentPrice > 0) {
+      document.getElementById('usdInput').value = (btcAmount * currentPrice).toFixed(2);
+    } else {
+      document.getElementById('usdInput').value = '';
+    }
+  });
+
+  // Funkcja przeliczająca USD na BTC po zmianie wartości USD
+  document.getElementById('usdInput').addEventListener('input', function () {
+    var usdAmount = parseFloat(this.value);
+    if (!isNaN(usdAmount) && currentPrice > 0) {
+      document.getElementById('btcInput').value = (usdAmount / currentPrice).toFixed(6); // Wyświetlaj 6 miejsc dla BTC
+    } else {
+      document.getElementById('btcInput').value = '';
+    }
+  });
+
+
+  var legend = document.createElement('div');
+  legend.classList.add('legend');
+  legend.innerText = '';
+  legend.style.color = 'black';
+  document.getElementById('chart').appendChild(legend);
+
+
+  var legendJSON = document.createElement('div');  // Dodajemy deklarację zmiennej legendJSON
+  legendJSON.classList.add('legendJSON');
+  legendJSON.innerText = '';
+  legendJSON.style.color = 'black';
+  document.getElementById('chart').appendChild(legendJSON);
+
+  chart.subscribeCrosshairMove((param) => {
+    if (param.time) {
+      // Pobierz dane serii świec (candle series)
+      const data = param.seriesData.get(candleSeries);
+
+      if (data) {
+        // Jeżeli dane z serii są dostępne, użyj ich
+        legendJSON.innerText = `O: ${parseFloat(data.open).toFixed(2)}, C: ${parseFloat(data.close).toFixed(2)}, H: ${parseFloat(data.high).toFixed(2)}, L: ${parseFloat(data.low).toFixed(2)}`;
+      } else {
+        // Jeżeli dane z serii nie są dostępne, użyj danych z funkcji fetch
+        legendJSON.innerText = '';
+      }
+    }
+  });
+
+
+    // Dodajemy obsługę zdarzenia "mouseleave" na elemencie wykresu
+    document.getElementById('chart').addEventListener('mouseleave', () => {
+      // Po opuszczeniu wykresu, ustawiamy legendJSON jako pusty
+      legendJSON.innerText = '';
+    });
+    window.addEventListener('load', adjustChartSize);
+    window.addEventListener('resize', adjustChartSize);
+
+
+  chart.subscribeCrosshairMove((param) => {
+    if (param.time) {
+      const data = param.seriesData.get(candleSeries);
+    }
+  });
+
+  const init = async () => {
+    
+    const { bitcoin: { websocket } } = mempoolJS({
+      hostname: 'mempool.space'
+    });
+
+    const ws = websocket.initClient({
+      options: ['blocks', 'stats', 'mempool-blocks', 'live-2h-chart'],
+    });
+
+    ws.addEventListener('message', function incoming({data}) {
+      const res = JSON.parse(data.toString());
+
+      if (res["mempool-blocks"]) {
+        const blockContainer = document.getElementById("block-container");
+        blockContainer.innerHTML = ""; // Wyczyść istniejące dane przed aktualizacją
+
+        res["mempool-blocks"].forEach(block => {
+            const blockElement = document.createElement("div");
+            blockElement.classList.add("block");
+
+            // Przelicz rozmiar bloku na megabajty
+            const blockSizeInMB = (block.blockSize / 1000000).toFixed(2);
+
+            // Dodaj informacje do bloku
+            blockElement.innerHTML = `
+                <pre>~${(block.medianFee).toFixed(2)} sat/vB</pre>
+                <pre>${Math.min(...block.feeRange).toFixed(2)} - ${Math.max(...block.feeRange).toFixed(2)} sat/vB</pre>
+                <h4><b><pre>${blockSizeInMB} MB</pre></b></h4>
+                <pre>${block.nTx} transakcji </pre>
+            `;
+
+            blockContainer.appendChild(blockElement);
+        });
+      }
+
+      if (res.block) {
+        // Wydobywanie danych bloku
+        const blockData = res.block;
+        const extras = blockData.extras || {};
+
+        // Aktualizowanie treści w HTML
+        const blockIdElement = document.getElementById("block-id");
+        const previousBlockIdElement = document.getElementById("previous-block"); 
+        const coinbaseAddressElement = document.getElementById("coinbase-address");
+        // Formatowanie identyfikatora bloku
+        const blockIdFormatted = `${blockData.id.substring(0, 12)}....${blockData.id.substring(blockData.id.length - 8)}`;
+        // Formatowanie poprzedniego identyfikatora bloku
+        const previousBlockIdFormatted = `${blockData.previousblockhash.substring(0, 12)}....${blockData.previousblockhash.substring(blockData.previousblockhash.length - 8)}`;
+        const coinbaseAddressFormatted = `${extras.coinbaseAddress.substring(0, 10)}....${extras.coinbaseAddress.substring(extras.coinbaseAddress.length - 6)}`;
+
+        blockIdElement.textContent = blockIdFormatted; // Ustawiamy sformatowany tekst
+        blockIdElement.href = `https://mempool.space/block/${blockData.id}`; // Ustawiamy link do mempool.space
+        blockIdElement.target = "_blank"; // Otwieramy w nowej karcie
+
+        previousBlockIdElement.textContent = previousBlockIdFormatted; // Ustawiamy sformatowany tekst
+        previousBlockIdElement.href = `https://mempool.space/block/${blockData.previousblockhash}`; // Ustawiamy link do mempool.space
+        previousBlockIdElement.target = "_blank"; // Otwieramy w nowej karcie
+
+        coinbaseAddressElement.textContent = coinbaseAddressFormatted; // Ustawiamy sformatowany tekst
+        coinbaseAddressElement.href = `https://mempool.space/address/${extras.coinbaseAddress}`; // Ustawiamy link do mempool.space
+        coinbaseAddressElement.target = "_blank"; // Otwieramy w nowej karcie
+
+
+        document.getElementById("block-height").textContent = blockData.height;
+        document.getElementById("block-timestamp").textContent = new Date(blockData.timestamp * 1000).toLocaleString();
+        // document.getElementById("previous-block").textContent = blockData.previousblockhash;
+        document.getElementById("tx-count").textContent = blockData.tx_count;
+        // Obliczanie wartości w Bitcoinach
+        const totalFeesInBTC = (extras.totalFees / 100000000).toFixed(8) || "N/A";
+        document.getElementById("total-fees").textContent = totalFeesInBTC + ' BTC';
+        
+        const totalFeesInUSD = (parseFloat(totalFeesInBTC) * currentPrice).toFixed(2) || "N/A";
+        console.log("totalFeesInUSD", totalFeesInUSD);
+        const totalFeesInUSDElement = document.getElementById("totalFeesInUSD");
+        totalFeesInUSDElement.textContent = ' - $' + totalFeesInUSD || "N/A";
+        totalFeesInUSDElement.style.color = "#24b873"; // Ustawienie koloru na zielony
+
+        const rewardInBTC = (extras.reward / 100000000).toFixed(8) || "N/A";
+        document.getElementById("reward").textContent = rewardInBTC + ' BTC';
+
+        const rewardInUSD = (parseFloat(rewardInBTC) * currentPrice).toFixed(2) || "N/A";
+        console.log("rewardInUSD", rewardInUSD);
+        const rewardInUSDElement = document.getElementById("rewardInUSD");
+        rewardInUSDElement.textContent = ' - $' + rewardInUSD || "N/A";
+        rewardInUSDElement.style.color = "#24b873"; // Ustawienie koloru na zielony
+        // document.getElementById("coinbase-address").textContent = extras.coinbaseAddress || "N/A";
+        document.getElementById("pool-name").textContent = extras.pool?.name || "N/A";
+      }
+
+      if (res.transactions) {
+        const transactionContainer = document.getElementById("result-transactions");
+        transactionContainer.innerHTML = ""; // Wyczyść poprzednie dane przed aktualizacją
+
+        // Tworzymy element <ul> z klasą list-group
+        const ulElement = document.createElement("ul");
+        ulElement.classList.add("list-group");
+
+        // Iterujemy przez każdą transakcję w liście
+        res.transactions.forEach(transaction => {
+          const liElement = document.createElement("li");
+          liElement.classList.add("list-group-item");
+
+          // Skracamy TXID do formatu: początkowe 6 znaków ... końcowe 6 znaków
+          const txidShort = `${transaction.txid.slice(0, 15)}....${transaction.txid.slice(-8)}`;
+
+          // Tworzymy zawartość dla pojedynczej transakcji
+          liElement.innerHTML = `
+            <strong>TXID:</strong> <a href="#" onclick="window.open('https://mempool.space/tx/${transaction.txid}', '_blank')">${txidShort}</a><br>
+            <strong>Fee:</strong> ${transaction.fee} sat, 
+            <strong>Size:</strong> ${transaction.vsize} vB, 
+            <strong>Value:</strong> ${transaction.value} sat, 
+            <strong>Rate:</strong> ${transaction.rate.toFixed(2)} sat/vB<br>
+            <strong>Time:</strong> ${new Date(transaction.time * 1000).toLocaleString()}
+          `;
+
+          // Dodajemy element <li> do <ul>
+          ulElement.appendChild(liElement);
+        });
+
+        // Dodajemy całą listę do kontenera
+        transactionContainer.appendChild(ulElement);
+      }
+
+      if (res.fees) {
+        document.getElementById("fastestFee").textContent = JSON.stringify(res.fees.fastestFee, undefined, 2);
+        const fastestFeeInSatoshi = JSON.stringify(res.fees.fastestFee, undefined, 2) * 100;
+        document.getElementById("fastestFeeInSatoshi").innerHTML = fastestFeeInSatoshi;
+      }
+      if (res.fees) {
+        document.getElementById("halfHourFee").textContent = JSON.stringify(res.fees.halfHourFee, undefined, 2);
+      }
+      if (res.fees) {
+        document.getElementById("hourFee").textContent = JSON.stringify(res.fees.hourFee, undefined, 2);
+      }
+      if (res.fees) {
+        document.getElementById("economyFee").textContent = JSON.stringify(res.fees.economyFee, undefined, 2);
+      }
+      if (res.fees) {
+        document.getElementById("minimumFee").textContent = JSON.stringify(res.fees.minimumFee, undefined, 2);
+      }
+
+    });
+  };
+  init();
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
